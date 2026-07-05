@@ -26,7 +26,7 @@ from wyoming.server import AsyncServer
 
 from . import __version__
 from .handler import ParakeetEventHandler
-from .shims import OpenVinoDecoderShim, OpenVinoEncoderShim
+from .shims import OpenVinoDecoderShim, OpenVinoEncoderShim, _Spec
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,6 +40,65 @@ SUPPORTED_LANGUAGES = (
 
 def _parse_buckets(s: str | None) -> list[float]:
     return [float(x) for x in s.split(",") if x.strip()] if s else []
+
+
+class _StubEncoderSession:
+    """Stands in for the INT8 encoder ORT session during pipeline init.
+
+    onnx_asr loads a ~650 MB INT8 encoder session that we throw away the
+    moment the NPU shim is attached; stubbing it out saves that memory and
+    tens of seconds at startup. run() must never be reached.
+    """
+
+    def get_inputs(self):
+        return [_Spec("audio_signal", ["batch", 128, "time"]),
+                _Spec("length", ["batch"])]
+
+    def get_outputs(self):
+        return [_Spec("outputs", ["batch", 1024, "frames"]),
+                _Spec("encoded_lengths", ["batch"])]
+
+    def run(self, *args, **kwargs):
+        raise RuntimeError(
+            "stub encoder session invoked before the NPU shim was attached"
+        )
+
+
+def _load_pipeline(model_dir: str):
+    load = partial(
+        onnx_asr.load_model,
+        model=MODEL_NAME,
+        path=model_dir,
+        providers=["CPUExecutionProvider"],
+        sess_options=onnxruntime.SessionOptions(),
+        quantization="int8",
+    )
+
+    real_session = onnxruntime.InferenceSession
+
+    def factory(path, *args, **kwargs):
+        if str(path).endswith("encoder-model.int8.onnx"):
+            return _StubEncoderSession()
+        return real_session(path, *args, **kwargs)
+
+    onnxruntime.InferenceSession = factory
+    try:
+        model = load()
+        if not isinstance(model.asr._encoder, _StubEncoderSession):
+            _LOGGER.info(
+                "onnx_asr did not go through the patched session factory; "
+                "the INT8 encoder was loaded normally"
+            )
+        return model
+    except Exception:
+        _LOGGER.exception(
+            "Pipeline init with stubbed INT8 encoder failed; "
+            "falling back to the plain loader"
+        )
+    finally:
+        onnxruntime.InferenceSession = real_session
+
+    return load()
 
 
 def _build_wyoming_info(default_language: str) -> Info:
@@ -139,16 +198,10 @@ async def main() -> None:
             )
             sys.exit(1)
 
-    # 1. Load the onnx_asr pipeline (uses INT8 ORT sessions internally — we'll
-    #    immediately replace them).
-    _LOGGER.info("Loading onnx_asr pipeline (model=%s, quantization=int8) ...", MODEL_NAME)
-    model = onnx_asr.load_model(
-        model=MODEL_NAME,
-        path=model_dir,
-        providers=["CPUExecutionProvider"],
-        sess_options=onnxruntime.SessionOptions(),
-        quantization="int8",
-    )
+    # 1. Load the onnx_asr pipeline. Its INT8 encoder session is stubbed out
+    #    (we replace it with the NPU shim right below anyway).
+    _LOGGER.info("Loading onnx_asr pipeline (model=%s) ...", MODEL_NAME)
+    model = _load_pipeline(model_dir)
 
     # 2. Replace the encoder + decoder with OpenVINO shims.
     #    IMPORTANT: assign on `model.asr.*`, not on `model.*` — the adapter
@@ -177,6 +230,7 @@ async def main() -> None:
     await server.run(partial(
         ParakeetEventHandler, info, model, model_lock,
         default_language=args.language,
+        window_seconds=max(eager + lazy),
     ))
 
 

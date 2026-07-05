@@ -24,7 +24,9 @@ dependencies = [
     # OpenVINO version that exported them.
     "openvino==2026.2.1",
     "onnxruntime==1.26.0",
-    "onnx-asr[hub]>=0.5",
+    # Pinned exactly: the add-on stubs onnx-asr's encoder session and monkey-
+    # patches its encoder/decoder slots, so internals must not drift.
+    "onnx-asr[hub]==0.11.0",
     "wyoming==1.7.2",
     "soundfile",
     "numpy",

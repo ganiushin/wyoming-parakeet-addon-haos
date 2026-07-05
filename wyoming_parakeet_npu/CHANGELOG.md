@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.4.0
+
+- **Long audio is no longer truncated**: utterances longer than the bucket are
+  transcribed in bucket-sized windows split at quiet points and stitched
+  together (up to 60 s total).
+- **Faster, lighter startup**: the throwaway ~650 MB INT8 encoder session is
+  stubbed out during pipeline init (loads in under a second instead of tens;
+  falls back to the plain loader automatically if anything goes wrong).
+- **Handler robustness**: audio is buffered in memory instead of a temp WAV
+  file; recognition errors return an empty transcript instead of an
+  "ERROR: ..." pseudo-phrase; `AudioStop` without audio no longer crashes the
+  connection; runaway audio input is capped at 60 s.
+- **Blob download resumes** after network interruptions (HTTP Range, 3
+  retries; a partial file survives restarts).
+- **Supply chain fully pinned**: Hugging Face model revision (`8f23f0c`) and
+  exact `onnx-asr==0.11.0`.
+
 ## 1.3.0
 
 - Default configuration is now the recommended one: `encoder_buckets: "10"`

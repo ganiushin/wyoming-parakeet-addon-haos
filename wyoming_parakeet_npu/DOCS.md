@@ -43,7 +43,7 @@ OpenVINO device to run inference on: `NPU` (default), `GPU`, or `CPU`. `CPU` is 
 
 ### `encoder_buckets` / `encoder_lazy_buckets`
 
-Comma-separated audio bucket sizes in seconds. Eager buckets are prepared at startup; lazy buckets on first use. Audio shorter than the bucket is padded (and still costs a full-bucket inference — ~200 ms on the NPU for 10 s); audio longer than the largest bucket is truncated.
+Comma-separated audio bucket sizes in seconds. Eager buckets are prepared at startup; lazy buckets on first use. Audio shorter than the bucket is padded (and still costs a full-bucket inference — ~200 ms on the NPU for 10 s); audio longer than the largest bucket is transcribed in bucket-sized windows split at quiet points and stitched together (up to 60 s total, each window costing one inference).
 
 The default **10 s** bucket uses a prebuilt, SHA-256-verified NPU blob (compiled offline for NPU 3720 — Meteor/Arrow Lake) downloaded on first start, so no on-device compilation is needed. Any other size falls back to a one-time on-device compile, which peaks at **~5 GB of RAM** (the resulting blob is then cached in `/data/ov_cache` and later starts are cheap again). Each configured eager bucket keeps its own ~1.2 GB compiled copy in memory — on small VMs stick to a single bucket.
 
@@ -57,3 +57,4 @@ The default **10 s** bucket uses a prebuilt, SHA-256-verified NPU blob (compiled
 
 - **`/dev/accel/accel0 not found` in the log** — the host kernel does not have `intel_vpu` loaded or the NPU is unsupported. Set `device: CPU` to test the rest of the pipeline.
 - **Discovery did not appear** — add the Wyoming integration manually: **Settings → Devices & Services → Add integration → Wyoming Protocol**, host = your HA machine IP, port = `10300`.
+- **A word garbled in long dictation around 10 s marks** — audio longer than the bucket is split into windows at the quietest point near each boundary; continuous speech without pauses can occasionally clip a word at a seam. Speak with natural pauses or configure a larger bucket (one-time on-device compile, ~5 GB RAM peak).

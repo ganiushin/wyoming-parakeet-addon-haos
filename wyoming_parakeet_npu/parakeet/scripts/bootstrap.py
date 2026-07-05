@@ -13,6 +13,8 @@ from pathlib import Path
 
 
 HF_REPO = "istupakov/parakeet-tdt-0.6b-v3-onnx"
+# Pinned repo revision (2026-02-17) so upstream changes can't slip in silently.
+HF_REVISION = "8f23f0c03c8761650bdb5b40aaf3e40d2c15f1ce"
 
 # Optional manifest with prebuilt NPU encoder blobs (shipped by the add-on).
 BLOB_MANIFEST = Path("/app/blobs.json")
@@ -45,6 +47,7 @@ def download_if_missing(model_dir: Path) -> None:
         hf_hub_download(
             repo_id=HF_REPO,
             filename=fname,
+            revision=HF_REVISION,
             local_dir=str(model_dir),
         )
         print(
@@ -66,12 +69,40 @@ def _wanted_blob_files() -> set:
     return {f"encoder_T{t}_{device}.blob" for t in ts}
 
 
+def _fetch_resumable(url: str, tmp: Path, attempts: int = 3) -> None:
+    """Download to ``tmp``, resuming a partial file via HTTP Range."""
+    import urllib.request
+
+    for attempt in range(1, attempts + 1):
+        pos = tmp.stat().st_size if tmp.exists() else 0
+        req = urllib.request.Request(url)
+        if pos:
+            req.add_header("Range", f"bytes={pos}-")
+            print(f"[bootstrap]   resuming from {pos / 1e6:.1f} MB", flush=True)
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                if pos and resp.status != 206:
+                    pos = 0  # server ignored Range; start over
+                with open(tmp, "ab" if pos else "wb") as f:
+                    while True:
+                        chunk = resp.read(1 << 20)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+            return
+        except Exception as exc:  # noqa: BLE001 — retried below
+            if attempt == attempts:
+                raise
+            print(f"[bootstrap]   download interrupted ({exc}); retrying "
+                  f"({attempt}/{attempts})", file=sys.stderr)
+            time.sleep(5)
+
+
 def download_prebuilt_blobs(cache_dir: Path) -> None:
     """Fetch prebuilt NPU blobs from the manifest so no on-device compile
     (with its multi-GB memory peak) is ever needed for the listed buckets."""
     import hashlib
     import json
-    import urllib.request
 
     if not BLOB_MANIFEST.exists():
         return
@@ -88,7 +119,7 @@ def download_prebuilt_blobs(cache_dir: Path) -> None:
         print(f"[bootstrap] Downloading precompiled NPU blob {fname} ...", flush=True)
         try:
             t0 = time.perf_counter()
-            urllib.request.urlretrieve(entry["url"], tmp)
+            _fetch_resumable(entry["url"], tmp)
             digest = hashlib.sha256()
             with open(tmp, "rb") as f:
                 for chunk in iter(lambda: f.read(1 << 20), b""):
@@ -105,10 +136,10 @@ def download_prebuilt_blobs(cache_dir: Path) -> None:
                 flush=True,
             )
         except Exception as exc:  # noqa: BLE001 — blob prefetch is best-effort
+            # Keep the .part file: the next start resumes where this one left off.
             print(f"[bootstrap]   blob download failed: {exc} "
-                  "(will compile on device instead)", file=sys.stderr)
-            if tmp.exists():
-                tmp.unlink()
+                  "(will retry/resume on next start, or compile on device)",
+                  file=sys.stderr)
 
 
 def build_static_decoder_ir(model_dir: Path, out_dir: Path) -> None:
