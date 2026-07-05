@@ -32,7 +32,7 @@ Comma-separated audio bucket sizes in seconds, passed straight to the upstream s
 
 - No streaming transcription: the whole utterance is transcribed at once (normal for Assist pipelines).
 - amd64 only — the Intel NPU is x86 by definition.
-- The add-on wraps the upstream image tagged `latest`. To pick up a new upstream release, use **Rebuild** on the add-on page.
+- The image is built locally from source code vendored in this repository (`parakeet/`, see `parakeet/VENDORED.md` for provenance); the first install therefore takes several minutes while Python dependencies and the Intel NPU driver packages (SHA-256 verified) are installed.
 
 ## Troubleshooting
 

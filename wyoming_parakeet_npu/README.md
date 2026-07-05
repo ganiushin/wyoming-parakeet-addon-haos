@@ -8,4 +8,4 @@ Parakeet TDT 0.6B v3 speech-to-text on Intel NPUs (Core Ultra AI Boost), exposed
 
 See [DOCS.md](./DOCS.md) for configuration.
 
-Wraps the upstream project [cibernox/wyoming-parakeet-on-intel-npu](https://github.com/cibernox/wyoming-parakeet-on-intel-npu).
+Built entirely from source vendored in this repository (`parakeet/`), originally from [cibernox/wyoming-parakeet-on-intel-npu](https://github.com/cibernox/wyoming-parakeet-on-intel-npu) (MIT).
