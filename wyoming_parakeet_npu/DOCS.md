@@ -4,13 +4,16 @@ Runs [wyoming-parakeet-on-intel-npu](https://github.com/cibernox/wyoming-parakee
 
 ## Requirements
 
-- Intel Core Ultra CPU with an AI Boost NPU (Arrow Lake verified upstream; Meteor Lake and Lunar Lake should work).
+- Intel Core Ultra CPU with an AI Boost NPU (Arrow Lake verified; Meteor Lake and Lunar Lake should work).
 - `/dev/accel/accel0` must exist on the Home Assistant OS host (`intel_vpu` kernel driver). Check from the SSH add-on with protection mode off: `ls /dev/accel/`.
-- ~4 GB free disk space. On first start the add-on downloads ~3.2 GB of model files into its persistent data directory; later starts take seconds.
+- ~6 GB free disk space in the add-on data volume (model files + NPU blob).
+- ~2 GB of free RAM for the add-on. On Proxmox with NPU passthrough give the HAOS VM at least 5 GB — passthrough pins the guest RAM, and a 4 GB VM running a typical add-on set OOM-kills the model load (exit code 137).
 
 ## First start
 
-The first start is slow: models are downloaded and compiled for the NPU. Watch the add-on log. Once the Wyoming server is listening, the add-on registers itself with Home Assistant and the **Wyoming Protocol** integration is offered under **Settings → Devices & Services** (accept it, or add it manually with the host IP and port `10300`).
+On first start the add-on downloads ~3.2 GB of model files plus a ~1.2 GB precompiled NPU blob (SHA-256 verified) into its persistent data directory — watch the progress in the add-on log. No on-device model compilation happens for the default 10 s bucket. Later starts take seconds.
+
+Once the Wyoming server is listening, the add-on registers itself with Home Assistant and the **Wyoming Protocol** integration is offered under **Settings → Devices & Services** (accept it, or add it manually with the host IP and port `10300`).
 
 Then select the new STT engine in **Settings → Voice assistants** for your pipeline.
 
@@ -26,9 +29,9 @@ OpenVINO device to run inference on: `NPU` (default), `GPU`, or `CPU`. `CPU` is 
 
 ### `encoder_buckets` / `encoder_lazy_buckets`
 
-Comma-separated audio bucket sizes in seconds. Eager buckets are prepared at startup; lazy buckets on first use. Audio longer than the largest bucket is truncated.
+Comma-separated audio bucket sizes in seconds. Eager buckets are prepared at startup; lazy buckets on first use. Audio shorter than the bucket is padded (and still costs a full-bucket inference — ~200 ms on the NPU for 10 s); audio longer than the largest bucket is truncated.
 
-For bucket sizes **6, 7, 8, 9 or 10 seconds** the add-on downloads a prebuilt, SHA-256-verified NPU blob (compiled offline for NPU 3720 — Meteor/Arrow Lake) instead of compiling on the device, so even the first start is light on memory (~1.5 GB peak). Any other size falls back to on-device compilation, which peaks at several GB of RAM once (the resulting blob is then cached in `/data/ov_cache`). Recommended on small VMs: `encoder_buckets: "6"` (or up to `10`), `encoder_lazy_buckets` empty.
+The default **10 s** bucket uses a prebuilt, SHA-256-verified NPU blob (compiled offline for NPU 3720 — Meteor/Arrow Lake) downloaded on first start, so no on-device compilation is needed. Any other size falls back to a one-time on-device compile, which peaks at **~5 GB of RAM** (the resulting blob is then cached in `/data/ov_cache` and later starts are cheap again). Each configured eager bucket keeps its own ~1.2 GB compiled copy in memory — on small VMs stick to a single bucket.
 
 ## Notes and limitations
 

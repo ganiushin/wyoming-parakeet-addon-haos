@@ -1,26 +1,6 @@
 {
   "encoder_blobs": [
     {
-      "file": "encoder_T600_NPU.blob",
-      "url": "https://github.com/ganiushin/wyoming-parakeet-addon-haos/releases/download/blobs-1/encoder_T600_NPU.blob",
-      "sha256": "bca5bcecae88b433d88816f5723314c87c24fcb6268ddb5a48e5ffc792c6cf19"
-    },
-    {
-      "file": "encoder_T700_NPU.blob",
-      "url": "https://github.com/ganiushin/wyoming-parakeet-addon-haos/releases/download/blobs-1/encoder_T700_NPU.blob",
-      "sha256": "186defc54b5256a4183aebadfc941184b9ec91c9130b4f1a6d2763f149b17936"
-    },
-    {
-      "file": "encoder_T800_NPU.blob",
-      "url": "https://github.com/ganiushin/wyoming-parakeet-addon-haos/releases/download/blobs-1/encoder_T800_NPU.blob",
-      "sha256": "eb18fb7672d0e00f066e6605af7f18828d6fc4e30805bb84bf750b4a4a38b29a"
-    },
-    {
-      "file": "encoder_T900_NPU.blob",
-      "url": "https://github.com/ganiushin/wyoming-parakeet-addon-haos/releases/download/blobs-1/encoder_T900_NPU.blob",
-      "sha256": "7e28f87635cd23e96e5e74637ce5e2f47bc53475eb77a1342c10d2106c93cac8"
-    },
-    {
       "file": "encoder_T1000_NPU.blob",
       "url": "https://github.com/ganiushin/wyoming-parakeet-addon-haos/releases/download/blobs-1/encoder_T1000_NPU.blob",
       "sha256": "85821b7de93407cdfd65d4e6c92633edf708dad161e3f1f305d107b92ebe318c"

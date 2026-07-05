@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.0
+
+- Default configuration is now the recommended one: `encoder_buckets: "10"`
+  (prebuilt blob, no on-device compile), `encoder_lazy_buckets` empty.
+- Blob manifest trimmed to the single 10 s bucket; other bucket sizes compile
+  on the device (one-time ~5 GB RAM peak, then cached).
+- Documentation overhaul: explicit list of every external download with its
+  verification, memory sizing guidance for Proxmox VMs.
+
 ## 1.2.1
 
 - Blob import no longer buffers the whole 1.2 GB file in Python: the blob is
