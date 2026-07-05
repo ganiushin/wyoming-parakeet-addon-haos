@@ -12,7 +12,9 @@ does not proxy attribute writes.
 """
 from __future__ import annotations
 
+import io
 import logging
+import mmap
 import os
 from typing import Optional
 
@@ -20,6 +22,29 @@ import numpy as np
 import openvino as ov
 
 _LOGGER = logging.getLogger(__name__)
+
+
+class _MmapBlob(io.BytesIO):
+    """BytesIO-typed wrapper whose buffer is an mmap of the blob file.
+
+    ov.Core.import_model() only accepts bytes/BytesIO and grabs the raw
+    buffer via getbuffer(). Backing that buffer with mmap lets the kernel
+    page the file in on demand instead of holding a full in-memory copy —
+    on a 1.2 GB blob this halves the import memory peak.
+    """
+
+    def __init__(self, path: str):
+        super().__init__()
+        self._f = open(path, "rb")
+        self._mm = mmap.mmap(self._f.fileno(), 0, prot=mmap.PROT_READ)
+
+    def getbuffer(self):
+        return memoryview(self._mm)
+
+    def close(self):
+        self._mm.close()
+        self._f.close()
+        super().close()
 
 
 def _build_compile_cfg(device: str, cache_dir: str) -> dict:
@@ -114,13 +139,15 @@ class OpenVinoEncoderShim:
         return os.path.join(self._cache_dir, f"encoder_T{T}_{self._device}.blob")
 
     def _drop_stale_blobs(self) -> None:
-        """Remove exported blobs for bucket sizes no longer configured."""
+        """Remove blobs for bucket sizes / precisions no longer configured."""
+        import re
+        pat = re.compile(
+            rf"^encoder_T\d+_{re.escape(self._device)}(_[a-z0-9]+)?\.blob$"
+        )
         valid = {os.path.basename(self._blob_path(T)) for T in self._buckets}
         try:
             for fname in os.listdir(self._cache_dir):
-                if (fname.startswith("encoder_T")
-                        and fname.endswith(f"_{self._device}.blob")
-                        and fname not in valid):
+                if pat.match(fname) and fname not in valid:
                     os.remove(os.path.join(self._cache_dir, fname))
                     _LOGGER.info("[encoder] Removed stale blob %s", fname)
         except FileNotFoundError:
@@ -135,8 +162,11 @@ class OpenVinoEncoderShim:
         blob_path = self._blob_path(T)
         if os.path.isfile(blob_path) and os.path.getsize(blob_path) > 0:
             _LOGGER.info("[encoder] Importing precompiled blob %s ...", blob_path)
-            with open(blob_path, "rb") as f:
-                compiled = core.import_model(f.read(), self._device)
+            stream = _MmapBlob(blob_path)
+            try:
+                compiled = core.import_model(stream, self._device)
+            finally:
+                stream.close()
             return _SingleEncoder(compiled, T)
 
         _LOGGER.info("[encoder] Loading ONNX %s ...", self._onnx_path)

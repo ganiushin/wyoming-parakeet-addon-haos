@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.1
+
+- Blob import no longer buffers the whole 1.2 GB file in Python: the blob is
+  mmap-fed to OpenVINO, roughly halving the import memory peak (fixes OOM
+  restarts on 4 GB VMs).
+- Note: an int8 encoder variant was evaluated and rejected — the NPU 3720
+  compiler always materializes FP16 weights in the executable blob, so int8
+  gives no memory savings on Meteor/Arrow Lake.
+
 ## 1.2.0
 
 - Warm starts no longer read the 2.4 GB FP32 encoder: after a successful
