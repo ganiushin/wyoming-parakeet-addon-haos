@@ -9,6 +9,20 @@ Runs [wyoming-parakeet-on-intel-npu](https://github.com/cibernox/wyoming-parakee
 - ~6 GB free disk space in the add-on data volume (model files + NPU blob).
 - ~2 GB of free RAM for the add-on. On Proxmox with NPU passthrough give the HAOS VM at least 5 GB — passthrough pins the guest RAM, and a 4 GB VM running a typical add-on set OOM-kills the model load (exit code 137).
 
+## Running HAOS in a Proxmox VM
+
+Two things are required for the NPU to work inside a VM:
+
+1. **Pass the NPU through** to the VM as a PCI device (Proxmox: VM → Hardware → Add → PCI Device → the Intel NPU / AI Boost device).
+2. **Add `intel_vpu.force_snoop=1` to the HAOS kernel command line.** Inside a VM the IOMMU does not provide cache-coherent (snooped) DMA for the NPU, so the driver must be forced into snooping mode — without this the device misbehaves or fails to initialize. From the HAOS console (or SSH on port 22222):
+
+   ```
+   vi /mnt/boot/cmdline.txt      # append: intel_vpu.force_snoop=1
+   reboot
+   ```
+
+   After reboot verify: `cat /proc/cmdline` should show the parameter and `ls /dev/accel/accel0` should succeed.
+
 ## First start
 
 On first start the add-on downloads ~3.2 GB of model files plus a ~1.2 GB precompiled NPU blob (SHA-256 verified) into its persistent data directory — watch the progress in the add-on log. No on-device model compilation happens for the default 10 s bucket. Later starts take seconds.
