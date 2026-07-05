@@ -1,6 +1,8 @@
 # Wyoming Parakeet on Intel NPU — Home Assistant add-on repository
 
-Home Assistant OS add-on that runs [wyoming-parakeet-on-intel-npu](https://github.com/cibernox/wyoming-parakeet-on-intel-npu) — NVIDIA Parakeet TDT 0.6B v3 speech-to-text accelerated on Intel NPUs (Core Ultra / AI Boost) via OpenVINO, exposed over the Wyoming protocol.
+Home Assistant OS add-on: NVIDIA Parakeet TDT 0.6B v3 speech-to-text accelerated on Intel NPUs (Core Ultra / AI Boost) via OpenVINO, exposed over the Wyoming protocol.
+
+The application source code is taken from the original project [cibernox/wyoming-parakeet-on-intel-npu](https://github.com/cibernox/wyoming-parakeet-on-intel-npu) by Miguel Camba (MIT license) and vendored into this repository (`wyoming_parakeet_npu/parakeet/`), so the add-on image is built entirely from the code kept here — no prebuilt third-party images. See [VENDORED.md](./wyoming_parakeet_npu/parakeet/VENDORED.md) for the exact upstream commit.
 
 A drop-in replacement for the Whisper add-on in Assist voice pipelines: 25 European languages, ~200 ms latency for 10 s of audio on an NPU, a fraction of the CPU power draw.
 
