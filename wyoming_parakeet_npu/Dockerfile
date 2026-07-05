@@ -8,8 +8,8 @@ FROM mirror.gcr.io/library/ubuntu:24.04
 
 ARG LIBZE_URL="https://github.com/oneapi-src/level-zero/releases/download/v1.28.6/libze1_1.28.6+u24.04_amd64.deb"
 ARG LIBZE_SHA256="8af9dc06d9684a20a3f43754fe109968fba2ba085cfa572a4cc6ef0272f9bcd1"
-ARG NPU_DRIVER_URL="https://github.com/intel/linux-npu-driver/releases/download/v1.32.1/linux-npu-driver-v1.32.1.20260422-24767473183-ubuntu2404.tar.gz"
-ARG NPU_DRIVER_SHA256="c4ad38bad6e1cdc609f68044ea3502366013e6a22758f698ffb532f48bd1ee48"
+ARG NPU_DRIVER_URL="https://github.com/intel/linux-npu-driver/releases/download/v1.33.0/linux-npu-driver-v1.33.0.20260529-26625960453-ubuntu2404.tar.gz"
+ARG NPU_DRIVER_SHA256="48cc219a5bd882a7cadaef523d9bb0c1e03c1b9b5b8562a29ad5ee4b9bfbb3bc"
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
@@ -59,10 +59,18 @@ COPY parakeet/pyproject.toml ./
 COPY parakeet/src ./src
 COPY parakeet/scripts ./scripts
 COPY parakeet/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+COPY blobs.json /app/blobs.json
 
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir . \
-    && chmod +x /usr/local/bin/docker-entrypoint.sh
+    && chmod +x /usr/local/bin/docker-entrypoint.sh \
+    # The pip openvino wheel lacks the NPU compiler loader; the driver package
+    # ships it. Symlink it where the plugin looks, enabling offline (AOT)
+    # compilation paths as well.
+    && ln -sf /usr/lib/x86_64-linux-gnu/libopenvino_intel_npu_compiler_loader.so \
+        /opt/venv/lib/python3.12/site-packages/openvino/libs/libopenvino_intel_npu_compiler_loader.so \
+    && ln -sf /usr/lib/x86_64-linux-gnu/libopenvino_intel_npu_compiler.so \
+        /opt/venv/lib/python3.12/site-packages/openvino/libs/libopenvino_intel_npu_compiler.so
 
 EXPOSE 10300
 

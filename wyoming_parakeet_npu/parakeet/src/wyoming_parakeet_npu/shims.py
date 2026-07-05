@@ -40,12 +40,8 @@ class _Spec:
 class _SingleEncoder:
     """One static-shape compiled encoder."""
 
-    def __init__(self, model, device: str, cache_dir: str, T_fixed: int):
-        os.makedirs(cache_dir, exist_ok=True)
-        core = ov.Core()
-        self._compiled = core.compile_model(
-            model, device, config=_build_compile_cfg(device, cache_dir)
-        )
+    def __init__(self, compiled, T_fixed: int):
+        self._compiled = compiled
         self._req = self._compiled.create_infer_request()
         self.T = T_fixed
         self.MEL = 128
@@ -94,7 +90,6 @@ class OpenVinoEncoderShim:
         self._cache_dir = cache_dir
         self._buckets: dict[int, Optional[_SingleEncoder]] = {}
 
-        _LOGGER.info("[encoder] Loading ONNX %s ...", onnx_path)
         for sec in eager_seconds:
             T = int(sec * fps)
             self._buckets[T] = self._build(T)
@@ -113,13 +108,54 @@ class OpenVinoEncoderShim:
             "[encoder] %d bucket(s) total | eager: %s | lazy: %s",
             len(self._buckets), eager, lazy,
         )
+        self._drop_stale_blobs()
+
+    def _blob_path(self, T: int) -> str:
+        return os.path.join(self._cache_dir, f"encoder_T{T}_{self._device}.blob")
+
+    def _drop_stale_blobs(self) -> None:
+        """Remove exported blobs for bucket sizes no longer configured."""
+        valid = {os.path.basename(self._blob_path(T)) for T in self._buckets}
+        try:
+            for fname in os.listdir(self._cache_dir):
+                if (fname.startswith("encoder_T")
+                        and fname.endswith(f"_{self._device}.blob")
+                        and fname not in valid):
+                    os.remove(os.path.join(self._cache_dir, fname))
+                    _LOGGER.info("[encoder] Removed stale blob %s", fname)
+        except FileNotFoundError:
+            pass
 
     def _build(self, T: int) -> _SingleEncoder:
+        os.makedirs(self._cache_dir, exist_ok=True)
         core = ov.Core()
+
+        # Fast path: a previously exported (or pre-built) blob loads directly,
+        # without pulling the multi-GB FP32 ONNX into memory.
+        blob_path = self._blob_path(T)
+        if os.path.isfile(blob_path) and os.path.getsize(blob_path) > 0:
+            _LOGGER.info("[encoder] Importing precompiled blob %s ...", blob_path)
+            with open(blob_path, "rb") as f:
+                compiled = core.import_model(f.read(), self._device)
+            return _SingleEncoder(compiled, T)
+
+        _LOGGER.info("[encoder] Loading ONNX %s ...", self._onnx_path)
         model = core.read_model(self._onnx_path)
         model.reshape({"audio_signal": [1, 128, T], "length": [1]})
         _LOGGER.info("[encoder] Compiling bucket T=%d for %s ...", T, self._device)
-        return _SingleEncoder(model, self._device, self._cache_dir, T)
+        compiled = core.compile_model(
+            model, self._device, config=_build_compile_cfg(self._device, self._cache_dir)
+        )
+        try:
+            blob = compiled.export_model()
+            # export_model() returns BytesIO on current OpenVINO, bytes on older
+            data = blob.getvalue() if hasattr(blob, "getvalue") else blob
+            with open(blob_path, "wb") as f:
+                f.write(data)
+            _LOGGER.info("[encoder] Exported blob to %s for fast warm starts", blob_path)
+        except Exception as e:  # noqa: BLE001 — export is an optimization, never fatal
+            _LOGGER.warning("[encoder] Blob export failed (%s); warm starts stay slow", e)
+        return _SingleEncoder(compiled, T)
 
     # ORT-compatible interface so onnx_asr can call us as if we were an InferenceSession
     def get_inputs(self):

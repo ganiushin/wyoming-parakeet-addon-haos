@@ -26,7 +26,9 @@ OpenVINO device to run inference on: `NPU` (default), `GPU`, or `CPU`. `CPU` is 
 
 ### `encoder_buckets` / `encoder_lazy_buckets`
 
-Comma-separated audio bucket sizes in seconds, passed straight to the upstream server. Eager buckets are compiled at startup; lazy buckets are compiled on first use. Audio longer than the largest bucket is truncated. Defaults (`5` / `20`) are fine for voice commands.
+Comma-separated audio bucket sizes in seconds. Eager buckets are prepared at startup; lazy buckets on first use. Audio longer than the largest bucket is truncated.
+
+For bucket sizes **6, 7, 8, 9 or 10 seconds** the add-on downloads a prebuilt, SHA-256-verified NPU blob (compiled offline for NPU 3720 — Meteor/Arrow Lake) instead of compiling on the device, so even the first start is light on memory (~1.5 GB peak). Any other size falls back to on-device compilation, which peaks at several GB of RAM once (the resulting blob is then cached in `/data/ov_cache`). Recommended on small VMs: `encoder_buckets: "6"` (or up to `10`), `encoder_lazy_buckets` empty.
 
 ## Notes and limitations
 

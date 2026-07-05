@@ -20,7 +20,9 @@ classifiers = [
 ]
 
 dependencies = [
-    "openvino>=2025.0",
+    # Pinned exactly: precompiled NPU blobs are only importable by the same
+    # OpenVINO version that exported them.
+    "openvino==2026.2.1",
     "onnxruntime==1.26.0",
     "onnx-asr[hub]>=0.5",
     "wyoming==1.7.2",

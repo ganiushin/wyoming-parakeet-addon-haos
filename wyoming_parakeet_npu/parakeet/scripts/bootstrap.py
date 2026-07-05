@@ -14,6 +14,9 @@ from pathlib import Path
 
 HF_REPO = "istupakov/parakeet-tdt-0.6b-v3-onnx"
 
+# Optional manifest with prebuilt NPU encoder blobs (shipped by the add-on).
+BLOB_MANIFEST = Path("/app/blobs.json")
+
 # Files we need locally. Some are pulled by onnx-asr's HF auto-download for the
 # INT8 pipeline init, but we fetch all of them explicitly so the first run is
 # deterministic and we don't depend on onnx-asr's download path resolving.
@@ -49,6 +52,63 @@ def download_if_missing(model_dir: Path) -> None:
             f"({target.stat().st_size / 1e6:.1f} MB)",
             flush=True,
         )
+
+
+def _wanted_blob_files() -> set:
+    """Blob filenames the current bucket/device configuration would use."""
+    device = os.environ.get("DEVICE", "NPU")
+    ts = set()
+    for var in ("ENCODER_BUCKETS", "ENCODER_LAZY_BUCKETS"):
+        for x in os.environ.get(var, "").split(","):
+            x = x.strip()
+            if x:
+                ts.add(int(float(x) * 100))
+    return {f"encoder_T{t}_{device}.blob" for t in ts}
+
+
+def download_prebuilt_blobs(cache_dir: Path) -> None:
+    """Fetch prebuilt NPU blobs from the manifest so no on-device compile
+    (with its multi-GB memory peak) is ever needed for the listed buckets."""
+    import hashlib
+    import json
+    import urllib.request
+
+    if not BLOB_MANIFEST.exists():
+        return
+    wanted = _wanted_blob_files()
+    for entry in json.loads(BLOB_MANIFEST.read_text()).get("encoder_blobs", []):
+        fname = entry["file"]
+        if fname not in wanted:
+            continue
+        target = cache_dir / fname
+        if target.exists() and target.stat().st_size > 0:
+            continue
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        tmp = target.with_suffix(".part")
+        print(f"[bootstrap] Downloading precompiled NPU blob {fname} ...", flush=True)
+        try:
+            t0 = time.perf_counter()
+            urllib.request.urlretrieve(entry["url"], tmp)
+            digest = hashlib.sha256()
+            with open(tmp, "rb") as f:
+                for chunk in iter(lambda: f.read(1 << 20), b""):
+                    digest.update(chunk)
+            if digest.hexdigest() != entry["sha256"]:
+                print(f"[bootstrap]   checksum mismatch for {fname}; "
+                      "discarding (will compile on device instead)", file=sys.stderr)
+                tmp.unlink()
+                continue
+            tmp.rename(target)
+            print(
+                f"[bootstrap]   done in {time.perf_counter()-t0:.1f}s "
+                f"({target.stat().st_size / 1e6:.1f} MB)",
+                flush=True,
+            )
+        except Exception as exc:  # noqa: BLE001 — blob prefetch is best-effort
+            print(f"[bootstrap]   blob download failed: {exc} "
+                  "(will compile on device instead)", file=sys.stderr)
+            if tmp.exists():
+                tmp.unlink()
 
 
 def build_static_decoder_ir(model_dir: Path, out_dir: Path) -> None:
@@ -93,6 +153,7 @@ def main() -> None:
 
     download_if_missing(model_dir)
     build_static_decoder_ir(model_dir, decoder_dir)
+    download_prebuilt_blobs(data_dir / "ov_cache")
     print("[bootstrap] All assets ready.", flush=True)
 
 
