@@ -1,0 +1,30 @@
+name: Wyoming Parakeet (Intel NPU)
+version: "1.0.0"
+slug: wyoming_parakeet_npu
+description: Parakeet TDT 0.6B v3 speech-to-text on Intel NPU (Wyoming protocol)
+url: https://github.com/ganiushin/wyoming-parakeet-addon-haos
+arch:
+  - amd64
+init: false
+startup: application
+boot: auto
+hassio_api: true
+discovery:
+  - wyoming
+ports:
+  10300/tcp: 10300
+ports_description:
+  10300/tcp: Wyoming protocol server
+watchdog: tcp://[HOST]:[PORT:10300]
+devices:
+  - /dev/accel/accel0
+options:
+  language: en
+  device: NPU
+  encoder_buckets: "5"
+  encoder_lazy_buckets: "20"
+schema:
+  language: list(bg|hr|cs|da|nl|en|et|fi|fr|de|el|hu|it|lv|lt|mt|pl|pt|ro|ru|sk|sl|es|sv|uk)
+  device: list(NPU|GPU|CPU)
+  encoder_buckets: str
+  encoder_lazy_buckets: str

@@ -1,0 +1,40 @@
+# Wyoming Parakeet (Intel NPU)
+
+Runs [wyoming-parakeet-on-intel-npu](https://github.com/cibernox/wyoming-parakeet-on-intel-npu): NVIDIA Parakeet TDT 0.6B v3 multilingual speech-to-text, accelerated on Intel NPUs (AI Boost) via OpenVINO and exposed over the Wyoming protocol. Use it as the STT engine in Assist voice pipelines instead of Whisper.
+
+## Requirements
+
+- Intel Core Ultra CPU with an AI Boost NPU (Arrow Lake verified upstream; Meteor Lake and Lunar Lake should work).
+- `/dev/accel/accel0` must exist on the Home Assistant OS host (`intel_vpu` kernel driver). Check from the SSH add-on with protection mode off: `ls /dev/accel/`.
+- ~4 GB free disk space. On first start the add-on downloads ~3.2 GB of model files into its persistent data directory; later starts take seconds.
+
+## First start
+
+The first start is slow: models are downloaded and compiled for the NPU. Watch the add-on log. Once the Wyoming server is listening, the add-on registers itself with Home Assistant and the **Wyoming Protocol** integration is offered under **Settings → Devices & Services** (accept it, or add it manually with the host IP and port `10300`).
+
+Then select the new STT engine in **Settings → Voice assistants** for your pipeline.
+
+## Options
+
+### `language`
+
+Default transcription language, used when the pipeline does not specify one. Parakeet TDT 0.6B v3 supports 25 European languages: `bg hr cs da nl en et fi fr de el hu it lv lt mt pl pt ro ru sk sl es sv uk`.
+
+### `device`
+
+OpenVINO device to run inference on: `NPU` (default), `GPU`, or `CPU`. `CPU` is a useful fallback to verify the pipeline works if the NPU is not detected. `GPU` requires the host to expose `/dev/dri` to the add-on, which this add-on does not map — use `NPU` or `CPU`.
+
+### `encoder_buckets` / `encoder_lazy_buckets`
+
+Comma-separated audio bucket sizes in seconds, passed straight to the upstream server. Eager buckets are compiled at startup; lazy buckets are compiled on first use. Audio longer than the largest bucket is truncated. Defaults (`5` / `20`) are fine for voice commands.
+
+## Notes and limitations
+
+- No streaming transcription: the whole utterance is transcribed at once (normal for Assist pipelines).
+- amd64 only — the Intel NPU is x86 by definition.
+- The add-on wraps the upstream image tagged `latest`. To pick up a new upstream release, use **Rebuild** on the add-on page.
+
+## Troubleshooting
+
+- **`/dev/accel/accel0 not found` in the log** — the host kernel does not have `intel_vpu` loaded or the NPU is unsupported. Set `device: CPU` to test the rest of the pipeline.
+- **Discovery did not appear** — add the Wyoming integration manually: **Settings → Devices & Services → Add integration → Wyoming Protocol**, host = your HA machine IP, port = `10300`.

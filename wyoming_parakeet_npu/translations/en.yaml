@@ -1,0 +1,22 @@
+configuration:
+  language:
+    name: Default language
+    description: >-
+      Transcription language used when the voice pipeline does not specify one.
+      Parakeet TDT 0.6B v3 supports 25 European languages.
+  device:
+    name: Inference device
+    description: >-
+      OpenVINO device for the model. NPU is the point of this add-on; CPU is a
+      fallback for testing. GPU is not supported by this add-on (no /dev/dri mapping).
+  encoder_buckets:
+    name: Eager encoder buckets
+    description: >-
+      Comma-separated audio bucket sizes in seconds, compiled at startup.
+  encoder_lazy_buckets:
+    name: Lazy encoder buckets
+    description: >-
+      Comma-separated audio bucket sizes in seconds, compiled on first use.
+      Audio longer than the largest bucket is truncated.
+network:
+  10300/tcp: Wyoming protocol server port
