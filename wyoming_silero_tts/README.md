@@ -12,4 +12,4 @@ natural-sounding replacement for Piper's Russian voices in Assist pipelines.
 
 Configuration and troubleshooting: see [DOCS.md](./DOCS.md).
 Project overview and provenance of all downloads: see the
-[repository README](https://github.com/ganiushin/wyoming-parakeet-addon-haos#readme).
+[repository README](https://github.com/ganiushin/parakeet-stt-silero-tts-addons-haos#readme).

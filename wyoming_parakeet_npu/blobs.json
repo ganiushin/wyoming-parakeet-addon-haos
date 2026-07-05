@@ -2,7 +2,7 @@
   "encoder_blobs": [
     {
       "file": "encoder_T1000_NPU.blob",
-      "url": "https://github.com/ganiushin/wyoming-parakeet-addon-haos/releases/download/blobs-1/encoder_T1000_NPU.blob",
+      "url": "https://github.com/ganiushin/parakeet-stt-silero-tts-addons-haos/releases/download/blobs-1/encoder_T1000_NPU.blob",
       "sha256": "85821b7de93407cdfd65d4e6c92633edf708dad161e3f1f305d107b92ebe318c"
     }
   ]

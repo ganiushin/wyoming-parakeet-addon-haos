@@ -33,10 +33,10 @@ NPU blob** and simply loads it.
 
 ### Installation
 
-[![Add repository to my Home Assistant](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fganiushin%2Fwyoming-parakeet-addon-haos)
+[![Add repository to my Home Assistant](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fganiushin%2Fparakeet-stt-silero-tts-addons-haos)
 
 Or manually: **Settings → Add-ons → Add-on Store → ⋮ → Repositories** →
-`https://github.com/ganiushin/wyoming-parakeet-addon-haos`, then install
+`https://github.com/ganiushin/parakeet-stt-silero-tts-addons-haos`, then install
 **Wyoming Parakeet (Intel NPU)** and/or **Wyoming Silero TTS**.
 
 After the first start the **Wyoming Protocol** integration is discovered
@@ -63,7 +63,7 @@ prebuilt third-party images. These are the only external artifacts, all pinned:
 | oneAPI Level Zero loader 1.28.6 | [oneapi-src/level-zero](https://github.com/oneapi-src/level-zero/releases/tag/v1.28.6) | **SHA-256 pinned** in Dockerfile |
 | Python packages (`openvino==2026.2.1`, `onnxruntime==1.26.0`, `wyoming==1.7.2`, …) | PyPI | versions pinned in [`pyproject.toml`](./wyoming_parakeet_npu/parakeet/pyproject.toml) |
 | Parakeet model files (~3.2 GB, ONNX) | [istupakov/parakeet-tdt-0.6b-v3-onnx](https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx) on Hugging Face | downloaded at first start |
-| Precompiled NPU blob (10 s bucket, ~1.2 GB) | [this repo's `blobs-1` release](https://github.com/ganiushin/wyoming-parakeet-addon-haos/releases/tag/blobs-1) | **SHA-256 pinned** in [`blobs.json`](./wyoming_parakeet_npu/blobs.json) |
+| Precompiled NPU blob (10 s bucket, ~1.2 GB) | [this repo's `blobs-1` release](https://github.com/ganiushin/parakeet-stt-silero-tts-addons-haos/releases/tag/blobs-1) | **SHA-256 pinned** in [`blobs.json`](./wyoming_parakeet_npu/blobs.json) |
 
 The application source lives in
 [`wyoming_parakeet_npu/parakeet/`](./wyoming_parakeet_npu/parakeet/) — vendored

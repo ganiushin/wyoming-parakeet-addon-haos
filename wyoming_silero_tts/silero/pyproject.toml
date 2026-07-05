@@ -27,8 +27,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ganiushin/wyoming-parakeet-addon-haos"
-Issues = "https://github.com/ganiushin/wyoming-parakeet-addon-haos/issues"
+Homepage = "https://github.com/ganiushin/parakeet-stt-silero-tts-addons-haos"
+Issues = "https://github.com/ganiushin/parakeet-stt-silero-tts-addons-haos/issues"
 
 [project.scripts]
 wyoming-silero-tts = "wyoming_silero_tts.__main__:main"

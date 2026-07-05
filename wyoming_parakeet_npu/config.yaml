@@ -2,7 +2,7 @@ name: Wyoming Parakeet (Intel NPU)
 version: "1.4.0"
 slug: wyoming_parakeet_npu
 description: Parakeet TDT 0.6B v3 speech-to-text on Intel NPU (Wyoming protocol)
-url: https://github.com/ganiushin/wyoming-parakeet-addon-haos
+url: https://github.com/ganiushin/parakeet-stt-silero-tts-addons-haos
 arch:
   - amd64
 init: false

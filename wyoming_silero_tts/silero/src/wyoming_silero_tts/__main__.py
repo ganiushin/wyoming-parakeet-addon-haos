@@ -46,8 +46,8 @@ def _build_wyoming_info(speakers: list) -> Info:
         name="silero",
         description="Silero v5 Russian text-to-speech on CPU",
         attribution=Attribution(
-            name="ganiushin/wyoming-parakeet-addon-haos",
-            url="https://github.com/ganiushin/wyoming-parakeet-addon-haos",
+            name="ganiushin/parakeet-stt-silero-tts-addons-haos",
+            url="https://github.com/ganiushin/parakeet-stt-silero-tts-addons-haos",
         ),
         installed=True,
         version=__version__,
