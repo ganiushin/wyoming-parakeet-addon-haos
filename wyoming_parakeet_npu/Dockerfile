@@ -64,8 +64,9 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 EXPOSE 10300
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
-    CMD python3 -c "import socket,sys; s=socket.socket(); s.settimeout(2); s.connect(('127.0.0.1', 10300)); s.close()" || exit 1
+# No HEALTHCHECK / supervisor watchdog: the first start downloads ~3.2 GB of
+# models before the port opens, which takes far longer than any sane probe
+# window and would get the add-on killed mid-download.
 
 COPY run.sh /run.sh
 RUN chmod +x /run.sh

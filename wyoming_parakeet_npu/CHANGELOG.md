@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.1
+
+- Remove the supervisor watchdog and Docker HEALTHCHECK: the first start
+  downloads ~3.2 GB of models before port 10300 opens, so the probes could
+  restart the add-on mid-download and caused a harmless but confusing
+  "Timeout while waiting for app to start" warning.
+
 ## 1.1.0
 
 - Image is now built entirely from source code vendored in this repository
