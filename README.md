@@ -48,7 +48,7 @@ the engine in **Settings → Voice assistants**.
 - **CPU:** Intel Core Ultra with AI Boost NPU — Meteor Lake, Arrow Lake (tested) or Lunar Lake
 - **Host:** `/dev/accel/accel0` present (kernel ≥ 6.10 with `intel_vpu`)
 - **Proxmox VM:** pass the NPU through as a PCI device **and** add `intel_vpu.force_snoop=1` to `/mnt/boot/cmdline.txt` in HAOS ([details](./wyoming_parakeet_npu/DOCS.md#running-haos-in-a-proxmox-vm))
-- **Memory:** ~2 GB free for the add-on — on Proxmox give the HAOS VM **5 GB+** (NPU passthrough pins guest RAM; a 4 GB VM with a typical add-on set OOMs)
+- **Memory:** ~2 GB free for the add-on — on Proxmox give the HAOS VM **4 GB**
 - **Disk:** ~6 GB in the add-on data volume (model files + NPU blob)
 
 ### Everything this add-on downloads
