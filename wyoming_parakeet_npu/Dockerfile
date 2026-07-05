@@ -2,7 +2,9 @@
 # The application code lives in ./parakeet (vendored, MIT — see parakeet/VENDORED.md).
 # The only build-time downloads are Intel's official NPU driver packages and the
 # oneAPI Level Zero loader, pinned by version and verified by SHA-256.
-FROM ubuntu:24.04
+# Base image comes from Google's mirror of the Docker Hub library (same image,
+# same digests) because direct docker.io access is unreliable on some networks.
+FROM mirror.gcr.io/library/ubuntu:24.04
 
 ARG LIBZE_URL="https://github.com/oneapi-src/level-zero/releases/download/v1.28.6/libze1_1.28.6+u24.04_amd64.deb"
 ARG LIBZE_SHA256="8af9dc06d9684a20a3f43754fe109968fba2ba085cfa572a4cc6ef0272f9bcd1"

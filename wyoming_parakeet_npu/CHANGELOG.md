@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2
+
+- Pull the ubuntu:24.04 base image from mirror.gcr.io (Google's Docker Hub
+  library mirror) instead of docker.io, which is unreachable or unstable on
+  some networks.
+
 ## 1.1.1
 
 - Remove the supervisor watchdog and Docker HEALTHCHECK: the first start
