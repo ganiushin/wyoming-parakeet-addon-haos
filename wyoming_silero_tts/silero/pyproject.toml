@@ -5,7 +5,7 @@ description = "Wyoming protocol TTS server running Silero v5 Russian voices on C
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
-authors = [{ name = "Mikhail Ganiushin" }]
+authors = [{ name = "Maksim Ganyushin" }]
 keywords = ["wyoming", "text-to-speech", "silero", "tts", "russian", "home-assistant"]
 classifiers = [
     "Development Status :: 4 - Beta",
