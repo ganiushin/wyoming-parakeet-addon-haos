@@ -1,0 +1,25 @@
+configuration:
+  voice:
+    name: Voice
+    description: >-
+      Default Silero speaker. xenia, baya and kseniya are female voices;
+      aidar and eugene are male. The voice pipeline can override this per
+      request.
+  sample_rate:
+    name: Sample rate
+    description: >-
+      Output sample rate in Hz. 48000 gives the best quality; 24000 is
+      slightly cheaper to synthesize and stream.
+  threads:
+    name: CPU threads
+    description: >-
+      Torch thread count for synthesis. Two threads already synthesize far
+      faster than real time; raise only if responses feel slow.
+  transliterate:
+    name: Transliterate Latin words
+    description: >-
+      The Russian Silero model silently skips Latin script. When enabled,
+      Latin words (device names, "Wi-Fi", "Spotify", ...) are transliterated
+      to Cyrillic so they are spoken instead of dropped.
+network:
+  10200/tcp: Wyoming protocol server port

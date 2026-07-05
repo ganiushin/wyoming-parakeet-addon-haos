@@ -1,0 +1,2 @@
+[console_scripts]
+wyoming-silero-tts = wyoming_silero_tts.__main__:main

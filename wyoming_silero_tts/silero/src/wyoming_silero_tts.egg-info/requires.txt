@@ -1,0 +1,4 @@
+torch<3,>=2.6
+wyoming==1.7.2
+num2words==0.5.14
+numpy

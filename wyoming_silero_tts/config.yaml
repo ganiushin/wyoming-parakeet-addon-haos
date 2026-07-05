@@ -1,0 +1,28 @@
+name: Wyoming Silero TTS
+version: "1.0.0"
+slug: wyoming_silero_tts
+description: Silero v5 Russian text-to-speech on CPU (Wyoming protocol)
+url: https://github.com/ganiushin/wyoming-parakeet-addon-haos
+arch:
+  - amd64
+  - aarch64
+init: false
+startup: application
+boot: auto
+hassio_api: true
+discovery:
+  - wyoming
+ports:
+  10200/tcp: 10200
+ports_description:
+  10200/tcp: Wyoming protocol server
+options:
+  voice: xenia
+  sample_rate: "48000"
+  threads: 2
+  transliterate: true
+schema:
+  voice: list(xenia|baya|kseniya|aidar|eugene)
+  sample_rate: list(48000|24000|8000)
+  threads: int(1,8)
+  transliterate: bool
