@@ -37,6 +37,23 @@ Then select the new STT engine in **Settings → Voice assistants** for your pip
 
 Default transcription language, used when the pipeline does not specify one. Parakeet TDT 0.6B v3 supports 25 European languages: `bg hr cs da nl en et fi fr de el hu it lv lt mt pl pt ro ru sk sl es sv uk`.
 
+### `force_language`
+
+Parakeet TDT v3 has **no language input**: it auto-detects the language of
+every utterance on its own (the Wyoming pipeline language is ignored by the
+model), and on quiet or noisy audio the guess occasionally lands on the wrong
+language — e.g. a Russian command transcribed as English gibberish.
+
+With this option enabled (default), decoding is locked to the alphabet of the
+requested language by suppressing other scripts' tokens: `ru`/`uk`/`bg` allow
+only Cyrillic, `el` only Greek, all other languages only Latin letters. Digits
+and punctuation are always allowed.
+
+Note the lock is per *script*, not per language: it cannot separate two
+Latin-script languages (e.g. English vs. German). Disable it if you dictate
+mixed-language text (e.g. Russian with inline English terms) and prefer proper
+Latin spelling over forced transliteration.
+
 ### `device`
 
 OpenVINO device to run inference on: `NPU` (default), `GPU`, or `CPU`. `CPU` is a useful fallback to verify the pipeline works if the NPU is not detected. `GPU` requires the host to expose `/dev/dri` to the add-on, which this add-on does not map — use `NPU` or `CPU`.

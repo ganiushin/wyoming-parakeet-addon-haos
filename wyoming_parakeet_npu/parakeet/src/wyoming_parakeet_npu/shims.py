@@ -21,7 +21,13 @@ from typing import Optional
 import numpy as np
 import openvino as ov
 
+from . import script_mask
+
 _LOGGER = logging.getLogger(__name__)
+
+# Logit value for banned tokens: low enough to never win argmax, finite so
+# a softmax over the row stays well-defined.
+_BANNED_LOGIT = -1.0e9
 
 
 class _MmapBlob(io.BytesIO):
@@ -231,7 +237,13 @@ class OpenVinoEncoderShim:
 class OpenVinoDecoderShim:
     """Decoder/joint shim — static input shapes, called per token in the TDT loop."""
 
-    def __init__(self, ir_path: str, device: str, cache_dir: str):
+    def __init__(
+        self,
+        ir_path: str,
+        device: str,
+        cache_dir: str,
+        vocab_path: Optional[str] = None,
+    ):
         os.makedirs(cache_dir, exist_ok=True)
         core = ov.Core()
         _LOGGER.info("[decoder] Loading IR %s ...", ir_path)
@@ -242,6 +254,30 @@ class OpenVinoDecoderShim:
         )
         self._req = self._compiled.create_infer_request()
         self._out_names = [o.any_name for o in self._compiled.outputs]
+        # Script-lock state (see script_mask.py). The Parakeet TDT decoder has
+        # no language input, so the language is enforced by suppressing other
+        # scripts' token logits before onnx_asr's greedy argmax sees them.
+        self._vocab = script_mask.load_vocab(vocab_path) if vocab_path else None
+        self._banned_ids: Optional[np.ndarray] = None
+        self._mask_cache: dict[str, Optional[np.ndarray]] = {}
+
+    def set_language(self, language: Optional[str]) -> None:
+        """Restrict decoding to ``language``'s script (None lifts the lock)."""
+        if self._vocab is None:
+            return
+        if not language:
+            self._banned_ids = None
+            return
+        if language not in self._mask_cache:
+            banned = script_mask.banned_token_ids(self._vocab, language)
+            self._mask_cache[language] = banned
+            _LOGGER.info(
+                "[decoder] Script lock for '%s': %s of %d tokens banned",
+                language,
+                "n/a" if banned is None else str(banned.size),
+                len(self._vocab),
+            )
+        self._banned_ids = self._mask_cache[language]
 
     def get_inputs(self):
         return [_Spec(i.any_name, list(i.shape)) for i in self._compiled.inputs]
@@ -259,6 +295,14 @@ class OpenVinoDecoderShim:
         }
         result = self._req.infer(feed_typed)
         out = {k.any_name: np.array(v) for k, v in result.items()}
+        if self._banned_ids is not None and self._banned_ids.size:
+            # The joint output is [B, T, U, vocab + durations]; banned ids all
+            # lie in the vocab region, so duration logits are never touched.
+            logits = out.get("outputs")
+            if logits is None:
+                logits = next((a for a in out.values() if a.ndim == 4), None)
+            if logits is not None:
+                logits[..., self._banned_ids] = _BANNED_LOGIT
         res = []
         for n in output_names:
             if n in out:

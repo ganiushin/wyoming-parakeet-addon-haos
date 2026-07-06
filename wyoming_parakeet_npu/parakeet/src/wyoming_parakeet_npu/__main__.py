@@ -142,9 +142,17 @@ async def main() -> None:
     )
     parser.add_argument(
         "--language",
-        default=os.environ.get("LANGUAGE", "en"),
+        default=os.environ.get("LANGUAGE", "ru"),
         choices=SUPPORTED_LANGUAGES,
         help="Default transcription language when the client does not specify one",
+    )
+    parser.add_argument(
+        "--force-language",
+        default=os.environ.get("FORCE_LANGUAGE", "true"),
+        choices=["true", "false"],
+        help="Restrict decoding to the transcription language's alphabet "
+             "(Parakeet TDT auto-detects the language per utterance and "
+             "otherwise sometimes drifts into the wrong one; default: true)",
     )
     parser.add_argument(
         "--encoder-buckets",
@@ -216,11 +224,18 @@ async def main() -> None:
         eager_seconds=eager,
         lazy_seconds=lazy,
     )
+    force_language = args.force_language == "true"
     model.asr._decoder_joint = OpenVinoDecoderShim(
         ir_path=decoder_ir,
         device=args.device,
         cache_dir=cache_dir,
+        vocab_path=os.path.join(model_dir, "vocab.txt") if force_language else None,
     )
+    if force_language:
+        _LOGGER.info(
+            "Language forcing ON: decoder locked to the script of the "
+            "requested language (default: %s)", args.language,
+        )
 
     # 3. Run the wyoming server.
     server = AsyncServer.from_uri(args.uri)
@@ -231,6 +246,7 @@ async def main() -> None:
         ParakeetEventHandler, info, model, model_lock,
         default_language=args.language,
         window_seconds=max(eager + lazy),
+        force_language=force_language,
     ))
 
 

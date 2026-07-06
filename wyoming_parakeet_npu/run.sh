@@ -7,14 +7,15 @@ opt() {
     jq -r --arg k "$1" --arg d "$2" '.[$k] // $d | tostring' "$OPTIONS" 2>/dev/null || echo "$2"
 }
 
-export LANGUAGE="$(opt language en)"
+export LANGUAGE="$(opt language ru)"
+export FORCE_LANGUAGE="$(opt force_language true)"
 export DEVICE="$(opt device NPU)"
 export ENCODER_BUCKETS="$(opt encoder_buckets 5)"
 export ENCODER_LAZY_BUCKETS="$(opt encoder_lazy_buckets 20)"
 export DATA_DIR=/data
 export WYOMING_URI=tcp://0.0.0.0:10300
 
-echo "[addon] language=${LANGUAGE} device=${DEVICE} buckets=${ENCODER_BUCKETS} lazy_buckets=${ENCODER_LAZY_BUCKETS}"
+echo "[addon] language=${LANGUAGE} force_language=${FORCE_LANGUAGE} device=${DEVICE} buckets=${ENCODER_BUCKETS} lazy_buckets=${ENCODER_LAZY_BUCKETS}"
 
 if [ "${DEVICE}" = "NPU" ] && [ ! -e /dev/accel/accel0 ]; then
     echo "[addon] WARNING: /dev/accel/accel0 not found inside the container." >&2

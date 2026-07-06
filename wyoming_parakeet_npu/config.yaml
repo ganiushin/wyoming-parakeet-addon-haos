@@ -1,5 +1,5 @@
 name: Wyoming Parakeet (Intel NPU)
-version: "1.4.0"
+version: "1.5.0"
 slug: wyoming_parakeet_npu
 description: Parakeet TDT 0.6B v3 speech-to-text on Intel NPU (Wyoming protocol)
 url: https://github.com/ganiushin/parakeet-stt-silero-tts-addons-haos
@@ -18,12 +18,14 @@ ports_description:
 devices:
   - /dev/accel/accel0
 options:
-  language: en
+  language: ru
+  force_language: true
   device: NPU
   encoder_buckets: "10"
   encoder_lazy_buckets: ""
 schema:
   language: list(bg|hr|cs|da|nl|en|et|fi|fr|de|el|hu|it|lv|lt|mt|pl|pt|ro|ru|sk|sl|es|sv|uk)
+  force_language: bool
   device: list(NPU|GPU|CPU)
   encoder_buckets: str
   encoder_lazy_buckets: str

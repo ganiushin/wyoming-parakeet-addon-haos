@@ -68,8 +68,9 @@ class ParakeetEventHandler(AsyncEventHandler):
         model: AsrAdapter,
         model_lock,
         *args,
-        default_language: str = "en",
+        default_language: str = "ru",
         window_seconds: float = 10.0,
+        force_language: bool = False,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
@@ -79,6 +80,7 @@ class ParakeetEventHandler(AsyncEventHandler):
         self.model_lock = model_lock
         self.default_language = default_language
         self.window_seconds = window_seconds
+        self.force_language = force_language
         self.request_language: Optional[str] = None
         self._audio = bytearray()
         self._rate: Optional[int] = None
@@ -116,6 +118,13 @@ class ParakeetEventHandler(AsyncEventHandler):
             _LOGGER.debug("Long audio: transcribing %d windows", len(segments))
         texts = []
         async with self.model_lock:
+            if self.force_language:
+                # Parakeet TDT ignores onnx_asr's language argument; the
+                # decoder shim enforces the language via a script logit mask.
+                decoder = getattr(getattr(self.model, "asr", None),
+                                  "_decoder_joint", None)
+                if hasattr(decoder, "set_language"):
+                    decoder.set_language(lang)
             for segment in segments:
                 text = self.model.recognize(
                     segment, language=lang, sample_rate=self._rate

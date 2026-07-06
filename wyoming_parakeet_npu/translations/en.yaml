@@ -4,6 +4,13 @@ configuration:
     description: >-
       Transcription language used when the voice pipeline does not specify one.
       Parakeet TDT 0.6B v3 supports 25 European languages.
+  force_language:
+    name: Force language
+    description: >-
+      Lock transcription to the alphabet of the pipeline language. Parakeet
+      auto-detects the language per utterance and can otherwise transcribe
+      e.g. Russian speech as English gibberish. Disable only for
+      mixed-language dictation.
   device:
     name: Inference device
     description: >-

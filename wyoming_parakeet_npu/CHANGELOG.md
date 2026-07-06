@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.0
+
+- **New option `force_language` (default on)**: locks decoding to the alphabet
+  of the pipeline language. Parakeet TDT v3 ignores the requested language and
+  auto-detects it per utterance, which occasionally turned Russian speech into
+  English gibberish; the decoder shim now suppresses foreign-script token
+  logits (`ru`/`uk`/`bg` → Cyrillic only, `el` → Greek only, others → Latin
+  only). Digits, punctuation and special tokens are unaffected. Disable for
+  mixed-language dictation.
+
 ## 1.4.0
 
 - **Long audio is no longer truncated**: utterances longer than the bucket are
